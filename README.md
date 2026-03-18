@@ -14,7 +14,7 @@ A modern Android application for browsing, searching, and renting movies from th
 | **Min Android** | 7.0 (API 24) |
 | **Size** | ~12 MB |
 
-> **Note:** This is an unsigned release build. You may need to enable "Install from unknown sources" in your device settings.
+> **Note:** This is a debug-signed build. You may need to enable "Install from unknown sources" in your device settings.
 
 ---
 
