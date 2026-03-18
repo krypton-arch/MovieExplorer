@@ -53,6 +53,7 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -67,6 +68,7 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -90,6 +92,7 @@ import com.exmple.movieexplorer.ui.theme.TextSecondary
 import kotlinx.coroutines.delay
 import kotlin.math.roundToInt
 import kotlin.random.Random
+import kotlinx.coroutines.launch
 
 private enum class CheckoutState { CONFIRM, PROCESSING, SUCCESS }
 
@@ -372,10 +375,14 @@ private fun PriceRow(label: String, value: String) {
 
 @Composable
 private fun SlideToConfirmButton(onConfirmed: () -> Unit) {
-    val maxDragPx = with(LocalDensity.current) { 220.dp.toPx() }
-    var dragOffset by remember { mutableFloatStateOf(0f) }
-    val progress = (dragOffset / maxDragPx).coerceIn(0f, 1f)
+    val pillSizePx = with(LocalDensity.current) { 58.dp.toPx() }
+    var trackWidthPx by remember { mutableFloatStateOf(1000f) }
+    val maxDragPx = (trackWidthPx - pillSizePx).coerceAtLeast(1f)
+
+    val dragOffset = remember { Animatable(0f) }
+    val progress = (dragOffset.value / maxDragPx).coerceIn(0f, 1f)
     var confirmed by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
 
     val bgAlpha by animateFloatAsState(
         targetValue = if (confirmed) 1f else 0.3f + progress * 0.7f,
@@ -386,6 +393,7 @@ private fun SlideToConfirmButton(onConfirmed: () -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .height(58.dp)
+            .onSizeChanged { trackWidthPx = it.width.toFloat() }
             .background(
                 Brush.horizontalGradient(
                     listOf(
@@ -395,7 +403,34 @@ private fun SlideToConfirmButton(onConfirmed: () -> Unit) {
                 ),
                 RoundedCornerShape(16.dp)
             )
-            .border(0.5.dp, PurpleLight.copy(alpha = 0.3f), RoundedCornerShape(16.dp)),
+            .border(0.5.dp, PurpleLight.copy(alpha = 0.3f), RoundedCornerShape(16.dp))
+            .then(
+                if (!confirmed) {
+                    Modifier.pointerInput(maxDragPx) {
+                        detectHorizontalDragGestures(
+                            onDragEnd = {
+                                val currentProgress = (dragOffset.value / maxDragPx).coerceIn(0f, 1f)
+                                if (currentProgress >= 0.7f) {
+                                    confirmed = true
+                                    onConfirmed()
+                                } else {
+                                    scope.launch {
+                                        dragOffset.animateTo(0f, tween(300))
+                                    }
+                                }
+                            },
+                            onHorizontalDrag = { change, delta ->
+                                change.consume()
+                                scope.launch {
+                                    dragOffset.snapTo(
+                                        (dragOffset.value + delta).coerceIn(0f, maxDragPx)
+                                    )
+                                }
+                            }
+                        )
+                    }
+                } else Modifier
+            ),
         contentAlignment = Alignment.CenterStart
     ) {
         // Background text
@@ -411,28 +446,13 @@ private fun SlideToConfirmButton(onConfirmed: () -> Unit) {
         if (!confirmed) {
             Box(
                 modifier = Modifier
-                    .offset { IntOffset(dragOffset.roundToInt(), 0) }
+                    .offset { IntOffset(dragOffset.value.roundToInt(), 0) }
                     .padding(4.dp)
                     .size(50.dp)
                     .background(
                         Brush.linearGradient(listOf(PurplePrimary, PurpleLight)),
                         RoundedCornerShape(14.dp)
-                    )
-                    .pointerInput(Unit) {
-                        detectHorizontalDragGestures(
-                            onDragEnd = {
-                                if (progress >= 0.85f) {
-                                    confirmed = true
-                                    onConfirmed()
-                                } else {
-                                    dragOffset = 0f
-                                }
-                            },
-                            onHorizontalDrag = { _, delta ->
-                                dragOffset = (dragOffset + delta).coerceIn(0f, maxDragPx)
-                            }
-                        )
-                    },
+                    ),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
