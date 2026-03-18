@@ -61,6 +61,7 @@ import com.exmple.movieexplorer.data.model.Movie
 import com.exmple.movieexplorer.ui.components.AppBottomBar
 import com.exmple.movieexplorer.ui.components.MovieCard
 import com.exmple.movieexplorer.ui.components.MovieDetailSheet
+import com.exmple.movieexplorer.ui.components.PurchaseCheckoutSheet
 import com.exmple.movieexplorer.ui.theme.BackgroundDark
 import com.exmple.movieexplorer.ui.theme.CardSurface
 import com.exmple.movieexplorer.ui.theme.GlassBorder
@@ -95,6 +96,7 @@ fun ExploreScreen(navController: NavController, viewModel: MovieViewModel) {
     }
 
     var selectedMovie by remember { mutableStateOf<Movie?>(null) }
+    var purchaseMovie by remember { mutableStateOf<Movie?>(null) }
     val allMovies = movies.ifEmpty { popularMovies }
 
     Box(modifier = Modifier.fillMaxSize()) {
@@ -202,10 +204,7 @@ fun ExploreScreen(navController: NavController, viewModel: MovieViewModel) {
                         movies = filteredMovies,
                         allMovies = allMovies,
                         category = selectedTab,
-                        onRentMovie = { movie ->
-                            viewModel.rentMovie(movie)
-                            navController.navigate("rental")
-                        },
+                        onRentMovie = { movie -> purchaseMovie = movie },
                         onCardClick = { selectedMovie = it }
                     )
                 }
@@ -219,11 +218,23 @@ fun ExploreScreen(navController: NavController, viewModel: MovieViewModel) {
                 relatedMovies = allMovies.filter { it.id != movie.id },
                 onDismiss = { selectedMovie = null },
                 onRentClick = {
-                    viewModel.rentMovie(movie)
                     selectedMovie = null
-                    navController.navigate("rental")
+                    purchaseMovie = movie
                 },
                 onRelatedMovieClick = { selectedMovie = it }
+            )
+        }
+
+        // Purchase checkout overlay
+        purchaseMovie?.let { movie ->
+            PurchaseCheckoutSheet(
+                movie = movie,
+                onConfirm = { days -> viewModel.rentMovie(movie) },
+                onDismiss = { purchaseMovie = null },
+                onViewRentals = {
+                    purchaseMovie = null
+                    navController.navigate("rental")
+                }
             )
         }
     }

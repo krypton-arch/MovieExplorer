@@ -75,6 +75,7 @@ import com.exmple.movieexplorer.data.model.getRentalPricePerDay
 import com.exmple.movieexplorer.ui.components.AppBottomBar
 import com.exmple.movieexplorer.ui.components.MovieCard
 import com.exmple.movieexplorer.ui.components.MovieDetailSheet
+import com.exmple.movieexplorer.ui.components.PurchaseCheckoutSheet
 import com.exmple.movieexplorer.ui.components.glassmorphism
 import com.exmple.movieexplorer.ui.theme.BackgroundDark
 import com.exmple.movieexplorer.ui.theme.CardSurface
@@ -106,6 +107,7 @@ fun HomeScreen(navController: NavController, viewModel: MovieViewModel) {
     var selectedGenre by remember { mutableStateOf("Trending") }
 
     var selectedMovie by remember { mutableStateOf<Movie?>(null) }
+    var purchaseMovie by remember { mutableStateOf<Movie?>(null) }
 
     // Pick the list based on selected genre chip
     val activeMovies = when (selectedGenre) {
@@ -319,10 +321,7 @@ fun HomeScreen(navController: NavController, viewModel: MovieViewModel) {
                             AnimatedMovieCardItem(index = index, movie = movie) {
                                 MovieCard(
                                     movie = movie,
-                                    onRentClick = {
-                                        viewModel.rentMovie(movie)
-                                        navController.navigate("rental")
-                                    },
+                                    onRentClick = { purchaseMovie = movie },
                                     onCardClick = { selectedMovie = movie }
                                 )
                             }
@@ -371,11 +370,23 @@ fun HomeScreen(navController: NavController, viewModel: MovieViewModel) {
                 relatedMovies = allMovies.filter { it.id != movie.id },
                 onDismiss = { selectedMovie = null },
                 onRentClick = {
-                    viewModel.rentMovie(movie)
                     selectedMovie = null
-                    navController.navigate("rental")
+                    purchaseMovie = movie
                 },
                 onRelatedMovieClick = { selectedMovie = it }
+            )
+        }
+
+        // Purchase checkout overlay
+        purchaseMovie?.let { movie ->
+            PurchaseCheckoutSheet(
+                movie = movie,
+                onConfirm = { days -> viewModel.rentMovie(movie) },
+                onDismiss = { purchaseMovie = null },
+                onViewRentals = {
+                    purchaseMovie = null
+                    navController.navigate("rental")
+                }
             )
         }
     }
