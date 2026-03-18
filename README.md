@@ -4,6 +4,20 @@ A modern Android application for browsing, searching, and renting movies from th
 
 ---
 
+## Download
+
+> **[Download APK (v1.0)](https://github.com/krypton-arch/MovieExplorer/raw/main/app-release.apk)**
+
+| | |
+|---|---|
+| **Version** | 1.0 |
+| **Min Android** | 7.0 (API 24) |
+| **Size** | ~12 MB |
+
+> **Note:** This is an unsigned release build. You may need to enable "Install from unknown sources" in your device settings.
+
+---
+
 ## Table of Contents
 
 - [Features](#features)
